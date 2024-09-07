@@ -1,0 +1,91 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url "https://oss.sonatype.org/content/repositories/releases/" }
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+    }
+    dependencies {
+        classpath "org.elasticsearch.gradle:build-tools:${elasticsearchVersion}"
+    }
+}
+
+apply plugin: 'elasticsearch.stable-esplugin'
+apply plugin: 'elasticsearch.yaml-rest-test'
+apply plugin: 'java'
+
+java {
+    modularity.inferModulePath = true 
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ['--module-path', sourceSets.main.output.classesDirs.asPath]
+}
+
+esplugin {
+    name 'uq_levenshtein-similarity-plugin'
+    description 'The UQ-Levenshtein Algorithm plugin provides enhanced fuzzy matching by combining Damerau-Levenshtein distance, Jaccard similarity, and a custom character similarity vector, ideal for vehicle plate and store name searches.'
+    classname 'org.tocharian.SimilarityLevenshteinPlugin'
+    licenseFile rootProject.file('LICENSE')
+    noticeFile rootProject.file('NOTICE.txt')
+}
+
+group 'org.tocharian'
+version '1.0.0'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url "https://oss.sonatype.org/content/repositories/releases/" }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+}
+
+dependencies {
+    compileOnly "org.elasticsearch.plugin:elasticsearch-plugin-api:${elasticsearchVersion}"
+    compileOnly "org.elasticsearch.plugin:elasticsearch-plugin-analysis-api:${elasticsearchVersion}"
+    compileOnly "org.elasticsearch:elasticsearch:${elasticsearchVersion}"
+    compileOnly "org.apache.lucene:lucene-core:${luceneVersion}"
+    compileOnly "org.apache.lucene:lucene-analysis-common:${luceneVersion}"
+
+    testImplementation "org.elasticsearch.plugin:elasticsearch-plugin-api:${elasticsearchVersion}"
+    testImplementation "org.elasticsearch.plugin:elasticsearch-plugin-analysis-api:${elasticsearchVersion}"
+    testImplementation "org.elasticsearch:elasticsearch:${elasticsearchVersion}"
+    testImplementation "org.apache.lucene:lucene-core:${luceneVersion}"
+    testImplementation "org.apache.lucene:lucene-analysis-common:${luceneVersion}"
+
+    testImplementation ('junit:junit:4.13.2') {
+        exclude group: 'org.hamcrest'
+    }
+    testImplementation 'org.mockito:mockito-core:4.4.0'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
+}
+
+task setupEnvironment {
+    doLast {
+        def osName = System.getProperty('os.name').toLowerCase()
+        def isWindows = osName.contains('win')
+        def isMac = osName.contains('mac')
+        def isLinux = osName.contains('nux')
+        def arch = System.getProperty('os.arch')
+        def isArm = arch == 'aarch64'
+        
+        if (isWindows) {
+            println 'Configuring for Windows'
+        } else if (isMac) {
+            if (isArm) {
+                println 'Configuring for macOS ARM'
+            } else {
+                println 'Configuring for macOS Intel'
+            }
+        } else if (isLinux) {
+            if (isArm) {
+                println 'Configuring for Linux ARM'
+            } else {
+                println 'Configuring for Linux x86'
+            }
+        } else {
+            throw new GradleException("Unsupported operating system: ${osName}")
+        }
+    }
+}
+
+assemble.dependsOn setupEnvironment
