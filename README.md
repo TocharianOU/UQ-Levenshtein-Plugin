@@ -60,6 +60,7 @@ The following is an example query using the UQ-Levenshtein algorithm for Elastic
     }
   }
 }
+```
 
 ### Explanation of Query
 
