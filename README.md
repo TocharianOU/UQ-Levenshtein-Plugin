@@ -1,28 +1,80 @@
-# UQ-Levenshtein Similarity Search
+# UQ-Levenshtein Algorithm
 
-This project implements the **UQ-Levenshtein Algorithm**, an enhanced version of the Damerau-Levenshtein algorithm. UQ-Levenshtein integrates **Jaccard similarity** and a custom **letter and number similarity vector** to improve the accuracy of fuzzy searches. This algorithm is particularly useful in scenarios like vehicle license plates and store name searches, where small spelling differences or input errors are common.
+This project implements the **UQ-Levenshtein Algorithm**, an enhanced version of the Damerau-Levenshtein algorithm. By integrating **Jaccard similarity** and a custom **letter and number similarity vector**, the UQ-Levenshtein Algorithm improves the accuracy of fuzzy searches. This algorithm is particularly useful in scenarios where small spelling differences or input errors are common. The UQ-Levenshtein plugin is designed to work with **Elasticsearch 8.7.0 and above**, ensuring compatibility with the latest versions and features of Elasticsearch.
+
+
+## Use Cases
+
+- **Vehicle License Plate Bidding Websites:** Improves the accuracy of searches for vehicle registration numbers on license plate bidding websites, helping users find plate numbers that visually or phonetically match their desired specifications, even with slight input mistakes or variations.
+- **Store Name Searches in E-Commerce Platforms:** Enhances the ability of e-commerce platforms to find store names within their databases, especially useful where typographical errors are common, helping customers find stores that match their intended search, even if the store names are not spelled exactly.
+
+This plugin provides an essential tool for systems requiring high levels of accuracy in data retrieval and entry error compensation, making it ideal for various applications in commercial and law enforcement settings.
+
 
 ## Algorithm Overview
 
-The **UQ-Levenshtein Algorithm** combines three core components:
+The **UQ-Levenshtein Algorithm** integrates three core components, each contributing uniquely to the process of text matching:
 
 1. **Damerau-Levenshtein Distance**:
-   - A classical algorithm for calculating the minimum number of operations (insertions, deletions, substitutions, and transpositions) needed to transform one string into another.
-   - It is used to assess how much two strings differ by counting the operations needed to convert one string to another.
+   - This classical algorithm calculates the minimum number of operations—insertions, deletions, substitutions, and transpositions—required to transform one string into another.
+   - The algorithm adjusts the substitution penalty dynamically using a custom similarity matrix. This adjustment specifically affects the calculation of the Damerau-Levenshtein distance and does not influence other algorithm components.
 
-2. **Jaccard Similarity**:
-   - Measures the similarity between two sets of characters by calculating the size of their intersection divided by the size of their union.
-   - This set-based similarity metric is useful for comparing the overall character composition between two strings.
+2. **Custom Letter and Number Similarity Vector**:
+   - The algorithm assigns reduced penalties for substituting characters based on their visual resemblance, enhancing accuracy in scenarios where similar-looking characters are often mistaken. 
 
-3. **Letter and Number Similarity Vector**:
-   - A custom similarity score is assigned based on the visual or phonetic resemblance between letters and numbers (e.g., `O` and `0`, `1` and `I`).
-   - This feature makes the UQ-Levenshtein algorithm highly effective in handling common data entry errors, such as when similar-looking characters are confused (especially in license plates or store names).
 
-## Query Example
+3. **Jaccard Similarity**:
+   - This metric evaluates the similarity between two sets of characters by calculating the ratio of the intersection to the union of the sets.
+   - The calculation of Jaccard similarity is independent of the custom similarity matrix.
+
+### Custom Similarity Matrix
+
+The custom similarity matrix dynamically adjusts the substitution penalties in the Damerau-Levenshtein distance calculation, ensuring that the penalties reflect the true nature of the character differences. Below is a detailed table illustrating the similarity scores between various character pairs:
+
+| Character 1 | Character 2 | Similarity Score |
+|-------------|-------------|------------------|
+| A           | 4           | 0.8              |
+| B           | 8           | 0.9              |
+| B           | 3           | 0.6              |
+| D           | O           | 0.8              |
+| D           | 0           | 0.8              |
+| E           | 3           | 0.7              |
+| G           | 6           | 0.8              |
+| C           | G           | 0.5              |
+| I           | 1           | 0.95             |
+| I           | L           | 0.6              |
+| O           | 0           | 0.9              |
+| O           | Q           | 0.7              |
+| S           | 5           | 0.9              |
+| Z           | 2           | 0.85             |
+| T           | 7           | 0.85             |
+| L           | 1           | 0.85             |
+| P           | R           | 0.6              |
+| U           | V           | 0.75             |
+| V           | Y           | 0.5              |
+| M           | N           | 0.45             |
+| K           | X           | 0.5              |
+
+
+
+
+## Installation
+
+To integrate the UQ-Levenshtein Algorithm into your Elasticsearch environment, follow these steps:
+
+1. [Download the latest release](https://github.com/TocharianOU/UQ-Levenshtein-Plugin/releases/download/all/uq_levenshtein-similarity-plugin-1.0.0.zip) from the GitHub Releases page.
+2. Extract the ZIP file to your Elasticsearch plugins directory.
+3. Restart Elasticsearch to load the new plugin.
+4. Verify the plugin is loaded correctly by running the Elasticsearch plugin list command: bin/elasticsearch-plugin list
+5. For detailed installation instructions, please visit our [installation guide](https://github.com/TocharianOU/UQ-Levenshtein-Plugin/releases/tag/all).
+
+
+## Example Query 1
 
 The following is an example query using the UQ-Levenshtein algorithm for Elasticsearch:
 
 ```json
+GET carplate/_search
 {
   "query": {
     "script_score": {
@@ -47,7 +99,7 @@ The following is an example query using the UQ-Levenshtein algorithm for Elastic
         }
       },
       "script": {
-        "lang": "expert_scripts",
+        "lang": "similarity_costum_scripts",
         "source": "uq_levenshtein_score",
         "params": {
           "field": "originalNumber",
@@ -60,20 +112,102 @@ The following is an example query using the UQ-Levenshtein algorithm for Elastic
     }
   }
 }
+```
 
-### Explanation of Query
+## Search Results 1
 
-The query searches for records where the `plateType` is `"prefix_2_num"`. It performs a match on the `plateNumber` field with the query term `"AZMAT"`, and then uses the **UQ-Levenshtein Algorithm** to compute a similarity score between the `originalNumber` field in the documents and the search term.
+After running the above query, Elasticsearch returns the following results, demonstrating the effectiveness of the UQ-Levenshtein Algorithm in handling fuzzy search scenarios:
+alpha is 0.7,
+beta is 0.3
 
-- **filter**: The filter ensures that only documents with a specific `plateType` (in this case, `"prefix_2_num"`) are considered for scoring.
-- **must**: The `must` clause performs a text match query on the `plateNumber` field, matching documents that contain or closely resemble the query term `"AZMAT"`.
-- **script_score**: This custom scoring function uses the **UQ-Levenshtein Algorithm** to calculate a similarity score for each document. It compares the `originalNumber` field from the document with the query term, `"AZMAT"`, and computes a score based on the Damerau-Levenshtein distance, Jaccard similarity, and a custom similarity vector for letters and numbers.
+```json
+{
+  "took": 149,
+  "hits": {
+    "hits": [
+      {"_score": 0.6075814, "_source": {"plateNumber": "A27 MAT"}},
+      {"_score": 0.6045814, "_source": {"plateNumber": "A24 MAT"}},
+      {"_score": 0.5642222, "_source": {"plateNumber": "Z27 MAT"}},
+      {"_score": 0.5612222, "_source": {"plateNumber": "Z24 MAT"}},
+      {"_score": 0.5565814, "_source": {"plateNumber": "A22 MAT"}},
+      {"_score": 0.5402222, "_source": {"plateNumber": "N27 MAT"}},
+      {"_score": 0.5372222, "_source": {"plateNumber": "N24 MAT"}},
+      {"_score": 0.5325098, "_source": {"plateNumber": "A27 NAT"}},
+      {"_score": 0.5295098, "_source": {"plateNumber": "A24 NAT"}},
+      {"_score": 0.51808137, "_source": {"plateNumber": "A23 MAT"}}
+    ]
+  }
+}
+```
 
-### Parameters:
-- **field**: The document field to compare against the query term, in this case, `originalNumber`.
-- **term**: The search term being used, `"AZMAT"`.
-- **alpha**: The weight given to the Damerau-Levenshtein distance in the final score.
-- **beta**: The weight given to the Jaccard similarity in the final score.
-- **max_dist**: The maximum allowed edit distance (threshold for Damerau-Levenshtein).
+## Example Query 2
 
-The result is a custom similarity score, which allows fuzzy matching of terms that may have minor spelling errors or transpositions, making it ideal for searches in contexts like vehicle license plates or store names.
+The following is an example query using the UQ-Levenshtein algorithm for Elasticsearch:
+alpha is 0.75,
+beta is 0.25
+
+```json
+GET carplate/_search
+{
+  "query": {
+    "script_score": {
+      "query": {
+        "bool": {
+          "filter": [
+            {
+              "term": {
+                "plateType": "prefix_2_num"
+              }
+            }
+          ],
+          "must": [
+            {
+              "match": {
+                "plateNumber": {
+                  "query": "AZMAT"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "script": {
+        "lang": "similarity_costum_scripts",
+        "source": "uq_levenshtein_score",
+        "params": {
+          "field": "originalNumber",
+          "term": "AZMAT",
+          "alpha": 0.75,
+          "beta": 0.25,
+          "max_dist": 4
+        }
+      }
+    }
+  }
+}
+```
+
+
+## Search Results 2
+alpha is 0.75,
+beta is 0.25
+
+```json
+{
+  "took": 87,
+  "hits": {
+    "hits": [
+      {"_score": 0.5838372, "_source": {"plateNumber": "A27 MAT"}},
+      {"_score": 0.5813372, "_source": {"plateNumber": "A24 MAT"}},
+      {"_score": 0.5413372, "_source": {"plateNumber": "A22 MAT"}},
+      {"_score": 0.52309525, "_source": {"plateNumber": "Z27 MAT"}},
+      {"_score": 0.52059525, "_source": {"plateNumber": "Z24 MAT"}},
+      {"_score": 0.50925386, "_source": {"plateNumber": "A23 MAT"}},
+      {"_score": 0.50925386, "_source": {"plateNumber": "A29 MAT"}},
+      {"_score": 0.50925386, "_source": {"plateNumber": "A26 MAT"}},
+      {"_score": 0.50925386, "_source": {"plateNumber": "A28 MAT"}},
+      {"_score": 0.50925386, "_source": {"plateNumber": "A25 MAT"}}
+    ]
+  }
+}
+```
