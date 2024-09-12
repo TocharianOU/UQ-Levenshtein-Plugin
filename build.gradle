@@ -24,13 +24,13 @@ tasks.withType(JavaCompile) {
 esplugin {
     name 'uq_levenshtein-similarity-plugin'
     description 'The UQ-Levenshtein Algorithm plugin provides enhanced fuzzy matching by combining Damerau-Levenshtein distance, Jaccard similarity, and a custom character similarity vector, ideal for vehicle plate and store name searches.'
-    classname 'org.tocharian.SimilarityLevenshteinPlugin'
+    classname 'org.elasticsearch.example.expertscript.ExpertScriptPlugin'
     licenseFile rootProject.file('LICENSE')
     noticeFile rootProject.file('NOTICE.txt')
 }
 
-group 'org.tocharian'
-version '1.0.0'
+group 'org.elasticsearch.example.expertscript'
+version '1.5.0'
 
 repositories {
     mavenLocal()
