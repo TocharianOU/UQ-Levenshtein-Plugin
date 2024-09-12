@@ -99,8 +99,8 @@ GET carplate/_search
         }
       },
       "script": {
-        "lang": "similarity_costum_scripts",
-        "source": "uq_levenshtein_score",
+        "lang": "similarity_custom",
+        "source": "uq_score",
         "params": {
           "field": "originalNumber",
           "term": "AZMAT",
@@ -147,67 +147,44 @@ alpha is 0.75,
 beta is 0.25
 
 ```json
-GET carplate/_search
+GET suffix/_search?filter_path=hits.hits._source.plateNumber
 {
+  "size": 30, 
   "query": {
     "script_score": {
+      "script": {
+              "lang": "similarity_custom",
+              "source": "uq_score",
+              "params": {
+                "field": "plateNumber.keyword",
+                "term": "AZMAT",
+                "alpha": 0.8,
+                "beta": 0.2,
+                "max_dist": 6,
+                "window_size": 500000, 
+                "from": 0 
+              }
+              },
       "query": {
         "bool": {
-          "filter": [
-            {
-              "term": {
-                "plateType": "prefix_2_num"
-              }
-            }
-          ],
           "must": [
             {
               "match": {
-                "plateNumber": {
-                  "query": "AZMAT"
-                }
+                "plateNumber.phonetic": "AZMAT"
+                
+              }
+            }
+          ], 
+          "filter": [
+            {
+              "term": {
+                "plateType": "suffix_1_num"
               }
             }
           ]
         }
-      },
-      "script": {
-        "lang": "similarity_costum_scripts",
-        "source": "uq_levenshtein_score",
-        "params": {
-          "field": "originalNumber",
-          "term": "AZMAT",
-          "alpha": 0.75,
-          "beta": 0.25,
-          "max_dist": 4
-        }
       }
     }
-  }
-}
-```
-
-
-## Search Results 2
-alpha is 0.75,
-beta is 0.25
-
-```json
-{
-  "took": 87,
-  "hits": {
-    "hits": [
-      {"_score": 0.5838372, "_source": {"plateNumber": "A27 MAT"}},
-      {"_score": 0.5813372, "_source": {"plateNumber": "A24 MAT"}},
-      {"_score": 0.5413372, "_source": {"plateNumber": "A22 MAT"}},
-      {"_score": 0.52309525, "_source": {"plateNumber": "Z27 MAT"}},
-      {"_score": 0.52059525, "_source": {"plateNumber": "Z24 MAT"}},
-      {"_score": 0.50925386, "_source": {"plateNumber": "A23 MAT"}},
-      {"_score": 0.50925386, "_source": {"plateNumber": "A29 MAT"}},
-      {"_score": 0.50925386, "_source": {"plateNumber": "A26 MAT"}},
-      {"_score": 0.50925386, "_source": {"plateNumber": "A28 MAT"}},
-      {"_score": 0.50925386, "_source": {"plateNumber": "A25 MAT"}}
-    ]
   }
 }
 ```
