@@ -1,62 +1,63 @@
 # UQ-Levenshtein Algorithm
 
-This project implements the **UQ-Levenshtein Algorithm**, an enhanced version of the Damerau-Levenshtein algorithm. By integrating **Jaccard similarity** and a custom **letter and number similarity vector**, the UQ-Levenshtein Algorithm improves the accuracy of fuzzy searches. This algorithm is particularly useful in scenarios where small spelling differences or input errors are common. The UQ-Levenshtein plugin is designed to work with **Elasticsearch 8.7.0 and above**, ensuring compatibility with the latest versions and features of Elasticsearch.
-
+The **UQ-Levenshtein Algorithm** is an advanced text similarity algorithm that enhances the Damerau-Levenshtein distance metric with Jaccard similarity and a custom character similarity vector. Designed for high-accuracy fuzzy search, it’s especially useful in scenarios with common spelling errors or input mistakes. The algorithm is compatible with **Elasticsearch 8.7.0** and above.
 
 ## Use Cases
+- **Vehicle License Plate Bidding Websites**: Improves accuracy in searching for registration numbers, even with minor variations or errors.
+- **Store Name Searches in E-Commerce Platforms**: Enhances search accuracy by compensating for typographical errors, helping customers find stores even with slight mistakes.
 
-- **Vehicle License Plate Bidding Websites:** Improves the accuracy of searches for vehicle registration numbers on license plate bidding websites, helping users find plate numbers that visually or phonetically match their desired specifications, even with slight input mistakes or variations.
-- **Store Name Searches in E-Commerce Platforms:** Enhances the ability of e-commerce platforms to find store names within their databases, especially useful where typographical errors are common, helping customers find stores that match their intended search, even if the store names are not spelled exactly.
+This plugin is ideal for applications needing high accuracy in data retrieval and error compensation, suitable for both commercial and law enforcement purposes.
 
-This plugin provides an essential tool for systems requiring high levels of accuracy in data retrieval and entry error compensation, making it ideal for various applications in commercial and law enforcement settings.
-
+---
 
 ## Algorithm Overview
 
-The **UQ-Levenshtein Algorithm** integrates three core components, each contributing uniquely to the process of text matching:
+The UQ-Levenshtein Algorithm incorporates three core components to improve text matching accuracy:
 
-1. **Damerau-Levenshtein Distance**:
-   - This classical algorithm calculates the minimum number of operations—insertions, deletions, substitutions, and transpositions—required to transform one string into another.
-   - The algorithm adjusts the substitution penalty dynamically using a custom similarity matrix. This adjustment specifically affects the calculation of the Damerau-Levenshtein distance and does not influence other algorithm components.
+1. **Damerau-Levenshtein Distance**: Calculates the minimum number of operations (insertions, deletions, substitutions, and transpositions) required to transform one string into another. Uses a **custom similarity matrix** to adjust substitution penalties dynamically.
+  
+2. **Custom Letter and Number Similarity Vector**: Applies reduced penalties for substituting visually similar characters, improving accuracy where similar-looking characters are commonly mistaken.
 
-2. **Custom Letter and Number Similarity Vector**:
-   - The algorithm assigns reduced penalties for substituting characters based on their visual resemblance, enhancing accuracy in scenarios where similar-looking characters are often mistaken. 
-
-
-3. **Jaccard Similarity**:
-   - This metric evaluates the similarity between two sets of characters by calculating the ratio of the intersection to the union of the sets.
-   - The calculation of Jaccard similarity is independent of the custom similarity matrix.
+3. **Jaccard Similarity**: Calculates similarity based on the ratio of intersection to union of character sets in two strings, complementing the Damerau-Levenshtein distance with set-based similarity.
 
 ### Custom Similarity Matrix
 
-The custom similarity matrix dynamically adjusts the substitution penalties in the Damerau-Levenshtein distance calculation, ensuring that the penalties reflect the true nature of the character differences. Below is a detailed table illustrating the similarity scores between various character pairs:
+The matrix adjusts substitution penalties based on visual similarity, especially effective in applications involving mixed letters and numbers. Below is a sample matrix:
 
 | Character 1 | Character 2 | Similarity Score |
 |-------------|-------------|------------------|
-| A           | 4           | 0.8              |
-| B           | 8           | 0.9              |
-| B           | 3           | 0.6              |
-| D           | O           | 0.8              |
-| D           | 0           | 0.8              |
-| E           | 3           | 0.7              |
-| G           | 6           | 0.8              |
-| C           | G           | 0.5              |
-| I           | 1           | 0.95             |
-| I           | L           | 0.6              |
-| O           | 0           | 0.9              |
-| O           | Q           | 0.7              |
-| S           | 5           | 0.9              |
-| Z           | 2           | 0.85             |
-| T           | 7           | 0.85             |
-| L           | 1           | 0.85             |
-| P           | R           | 0.6              |
-| U           | V           | 0.75             |
-| V           | Y           | 0.5              |
-| M           | N           | 0.45             |
-| K           | X           | 0.5              |
+| A           | 4           | 0.8             |
+| B           | 8           | 0.9             |
+| B           | 3           | 0.6             |
+| D           | O           | 0.8             |
+| D           | 0           | 0.8             |
+| E           | 3           | 0.7             |
+| G           | 6           | 0.8             |
+| C           | G           | 0.5             |
+| I           | 1           | 0.95            |
+| I           | L           | 0.6             |
+| O           | 0           | 0.9             |
+| O           | Q           | 0.7             |
+| S           | 5           | 0.9             |
+| Z           | 2           | 0.85            |
+| T           | 7           | 0.85            |
+| L           | 1           | 0.85            |
+| P           | R           | 0.6             |
+| U           | V           | 0.75            |
+| V           | Y           | 0.5             |
+| M           | N           | 0.45            |
+| K           | X           | 0.5             |
 
+---
 
+## Parameters
 
+- **alpha**: Controls the weight of Damerau-Levenshtein distance in the final score. A higher alpha emphasizes character replacement similarity.
+- **beta**: Controls the weight of Jaccard similarity in the final score. A higher beta emphasizes set-based similarity.
+- **max_dist**: Limits the maximum allowable distance for fuzzy matching.
+- **window_size**: Defines the scope of the search window, optimizing performance for larger datasets or longer strings.
+
+---
 
 ## Installation
 
@@ -79,24 +80,7 @@ GET carplate/_search
   "query": {
     "script_score": {
       "query": {
-        "bool": {
-          "filter": [
-            {
-              "term": {
-                "plateType": "prefix_2_num"
-              }
-            }
-          ],
-          "must": [
-            {
-              "match": {
-                "plateNumber": {
-                  "query": "AZMAT"
-                }
-              }
-            }
-          ]
-        }
+        "match_all": {}
       },
       "script": {
         "lang": "similarity_custom",
@@ -149,39 +133,23 @@ beta is 0.25
 ```json
 GET suffix/_search?filter_path=hits.hits._source.plateNumber
 {
-  "size": 30, 
+  "size": 30,
   "query": {
     "script_score": {
-      "script": {
-              "lang": "similarity_custom",
-              "source": "uq_score",
-              "params": {
-                "field": "plateNumber.keyword",
-                "term": "AZMAT",
-                "alpha": 0.8,
-                "beta": 0.2,
-                "max_dist": 6,
-                "window_size": 500000, 
-                "from": 0 
-              }
-              },
       "query": {
-        "bool": {
-          "must": [
-            {
-              "match": {
-                "plateNumber.phonetic": "AZMAT"
-                
-              }
-            }
-          ], 
-          "filter": [
-            {
-              "term": {
-                "plateType": "suffix_1_num"
-              }
-            }
-          ]
+        "match_all": {}
+      },
+      "script": {
+        "lang": "similarity_custom",
+        "source": "uq_score",
+        "params": {
+          "field": "plateNumber.keyword",
+          "term": "AZMAT",
+          "alpha": 0.8,
+          "beta": 0.2,
+          "max_dist": 6,
+          "window_size": 500000,
+          "from": 0
         }
       }
     }
